@@ -64,7 +64,7 @@ Log channels (`writeValue`): 0 uA, 1 uB, 2 posA, 3 posB, 4 spA, 5 spB, 6 xref, 7
 ## Tests to run on the robot
 
 1. **Sensor noise.** Robot still about 20 cm from the wall, no buttons, record 15 s. Save as `S_<dist>mm.csv` (e.g. `S_200mm.csv`). Recompute `sigma_d` from channel 7 (the notebook does this automatically if the file exists).
-2. **Estimator only.** Start about 45 cm from the wall, type the ruler distance in ValueOut1, press Button 1, push the robot by hand to about 20 cm, record as `W<n>_start<mm>_end<mm>.csv` (start and end distance from the ruler), measure the end distance with a ruler. Replay offline in section 5 of the notebook and compare with channel 9.
+2. **Estimator only.** Start about 30 cm from the wall (inside the sensor range, 4–30 cm), measure the start distance with the ruler and type it in ValueOut1, press Button 1, push the robot by hand to about 20 cm, record as `W<n>_start<mm>_end<mm>.csv` (start and end distance from the ruler), measure the end distance with a ruler. Replay offline in section 5 of the notebook and compare with channel 9.
 3. **Closed loop.** Wheels lifted: check the direction. Floor: type the ruler distance in ValueOut1 and the reference in ValueOut0, press Button 1 then Button 0, tune `K`, record the best run.
 4. **Robustness (optional).** Wave a hand in front of the sensor to show the gate works; start with a wrong initial distance to show convergence.
 
