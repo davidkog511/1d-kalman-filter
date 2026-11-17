@@ -17,10 +17,6 @@
 bool Robot::init() {
   MECOtron::init(); // Initialize the MECOtron
 
-  resetStateEstimator();
-  resetController();
-  xref(0) = readValue(0)*Meas2State;  // reference distance [m] typed in ValueOut0, converted to rad
-
   return true;
 }
 

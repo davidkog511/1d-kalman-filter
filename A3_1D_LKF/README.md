@@ -44,7 +44,22 @@ _xhat(0) = readValue(1)*Meas2State;    // initial distance in metres typed in Va
 * Both inputs are in **metres**: `ValueOut0` = reference distance, `ValueOut1` = initial distance (ruler). The firmware converts them with `Meas2State`.
 * Do not change the velocity controller.
 
-Template log channels (`writeValue`): 0 uA, 1 uB, 2 posA, 3 posB, 4 spA, 5 spB, 6 xref, 7 front distance, 8 xhat (a priori), 9 xhat (a posteriori), 10 innovation (0 when the reading was rejected), 11 P (a posteriori) [rad^2]. Channels 9–11 are only written while the estimator is on.
+Log channels (`writeValue`): 0 uA, 1 uB, 2 posA, 3 posB, 4 spA, 5 spB, 6 xref, 7 front distance, 8 xhat (a priori), 9 xhat (a posteriori), 10 innovation (0 when the reading was rejected), 11 P (a posteriori) [rad^2]. Channels 9–11 are only written while the estimator is on.
+
+## Differences from the course template
+
+`robot.cpp` differs from the course template (Sep 25) only where the assignment asks for values (`K`, `_Phat`, `_xhat`) and in the changes below. Changes to comments only are not listed. `state_estimator.cpp/.h` are ours (the template had only `??`).
+
+| Change | Why |
+|---|---|
+| Log channels renumbered, P added on 11 | The template writes channels 8 and 9 twice per step, so the a-posteriori estimate and the innovation were overwritten by the wheel angles. Now each signal is logged once. |
+| Control only runs when the estimator is on too (`controlEnabled() && StateEstimationEnabled()`) | With the estimator off, `_xhat` is frozen, so the controller would drive on a stale estimate and never stop. |
+| `ResetGate()` in `resetStateEstimator()` | The gate's rejected-reading counter lives in `state_estimator.cpp`. Without clearing it, a new run inherits the rejections of the previous one. |
+| `_nu(0) = 0` in `resetStateEstimator()` | After a reset the logged innovation starts at 0 instead of the previous run's last value. |
+| Button 0 message text | Says that control only starts once the estimator is on (row 2). |
+| `speedA`, `speedB` removed from `robot.h` | Unused (never read or written). |
+
+`xref(0) = readValue(0)*Meas2State` is the template line itself, so it is not a difference.
 
 ## Tests to run on the robot
 
@@ -55,14 +70,4 @@ Template log channels (`writeValue`): 0 uA, 1 uB, 2 posA, 3 posB, 4 spA, 5 spB, 
 
 ## Instructions for a generative AI assistant (Claude, ChatGPT, ...)
 
-The AI-assistant rules are in [`../CLAUDE.md`](../CLAUDE.md). The steps below conflict with CLAUDE.md and stay here until the team decides; CLAUDE.md wins in the meantime.
-
-5. **Generate the C++** from the notebook values and check that the arithmetic is consistent with the template (`~H`, `~F`, `Inverse(S)`, the gate before the Kalman gain).
-6. **Fill in `robot.cpp`** only at the `??` placeholders (`K`, `_Phat`, `_xhat`). Do not touch the velocity controller. Explain the sign of `K`.
-8. **Be honest about limits**: the code is not compiled until the user compiles it.
-
-### Ready-to-paste prompt
-
-```
-I am working on a KU Leuven Mobile Robotics assignment: a 1D linear Kalman filter for the distance from a MECOtron Arduino robot to a wall. Read README.md in this repo and follow the "Instructions for a generative AI assistant" section step by step. My assignment files (Assignment_1D_LKF.ipynb and the template robot.cpp, robot.h, state_estimator.cpp, state_estimator.h) are in: <PATH>. My recordings are in: <PATH>. Start by reading the template files and tell me what you found before changing anything.
-```
+See [`../CLAUDE.md`](../CLAUDE.md).
