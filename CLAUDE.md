@@ -16,10 +16,11 @@ Two people work on this repo remotely, each with their own Claude Code session.
 - **Controller:** template law `desired_velocity = K * (xref - _xhat)`, K > 0. Only K may differ from the course template in the position controller. The velocity controller is never changed.
 - **QRC inputs:** ValueOut0 = reference distance [m], ValueOut1 = start distance [m] (both converted with Meas2State).
 - **Sensor:** `getFrontDistance()` returns metres (Sharp GP2Y0A41SK, valid ~0.04–0.30 m). Drop-outs read ~24.78 m. Gate uses 0.04–0.35 m. Below 4 cm the sensor reads too far – keep the robot > 4 cm from the wall.
-- **Filter:** prediction model = A2 scenario 1 (wheel odometry): F = 1, B = TSAMPLE, u = mean wheel speed (wA + wB)/2 [rad/s]. H = -R_WHEEL, Q = 3.30e-6 rad² per step (= A2 Q1 / R_WHEEL²), R in m² from data/A3 static recordings, P0 defined once in state_estimator.h.
-- **Notebook and firmware must match:** same F, B, Q, H, R, P0, gate. If one changes, change the other in the same commit.
-  - The **firmware is the reference**. The notebook does not generate C++. It has a consistency-check cell that reads the values from `state_estimator.h/.cpp` (Q, R, H, P0, gate limits D_MIN/D_MAX, gate threshold, re-sync count) and asserts they equal its own. That cell must pass before pushing.
-  - The Python simulation implements the same gate as `CorrectionUpdate`: readings outside 0.04–0.35 m are skipped; `nu² > 9 S` is skipped unless it happens more than 20 times in a row, and then P is reset to P0 before the update; the counter starts at 0 for every run (`ResetGate()`).
+- **Filter:** prediction model = A2 scenario 1 (wheel odometry): F = 1, B = TSAMPLE, u = mean wheel speed (wA + wB)/2 [rad/s]. H = -R_WHEEL, Q = 3.30e-6 rad² per step (= A2 Q1 / R_WHEEL²), R in m² from data/A3 static recordings. P0_STATE = (5 mm / R_WHEEL)² (the start distance is tape-measured and typed in ValueOut1) and P_RESYNC = 9.5 rad² (≈ 10 cm, used by the gate) are defined once in state_estimator.h.
+- **Notebook and firmware must match:** same F, B, Q, H, R, P0, P_RESYNC, gate. If one changes, change the other in the same commit.
+  - The **firmware is the reference**. The notebook does not generate C++. It has a consistency-check cell that reads the values from `state_estimator.h/.cpp` (Q, R, H, P0, P_RESYNC, gate limits D_MIN/D_MAX, gate threshold, re-sync count) and asserts they equal its own. That cell must pass before pushing.
+  - The Python simulation implements the same gate as `CorrectionUpdate`: readings outside 0.04–0.35 m are skipped; `nu² > 9 S` is skipped unless it happens more than 20 times in a row, and then P is widened to P_RESYNC before the update; the counter starts at 0 for every run (`ResetGate()`).
+  - The simulation starts like the robot: inside the sensor range (0.30 m), from the tape-measured start distance with P0. A wrong start estimate is only used to demonstrate the re-sync, and is labelled as such.
 - Constants, column maps and A2 results live in `mr_common.py` – import them, don't redefine.
 
 ## Data

@@ -28,7 +28,7 @@ The template's `robot.h` defines `Meas2State = -1/R_WHEEL`, so the state is the 
 The front sensor has drop-outs that read 24.78 m. `CorrectionUpdate` therefore has a **gate**:
 
 * readings outside 0.04–0.35 m are always skipped (Sharp GP2Y0A41SK range ~0.04–0.30 m plus margin; also catches drop-outs, inf and NaN);
-* innovations above 3 sigma (`nu^2 > 9 * S`) are skipped, **unless** 20 samples in a row (0.2 s) fail the test. Then the measurement is accepted again and `_Phat` is reset to `P0_STATE`, so the filter actually catches up, because the estimate is wrong, not the sensor. The counter is cleared in `resetStateEstimator()`. Without this re-sync a wrong initial guess (e.g. ValueOut1 left at 0) locks the filter out forever. In the simulation the pure 3-sigma gate ends 465 mm off, while the re-sync version ends 5 mm off.
+* innovations above 3 sigma (`nu^2 > 9 * S`) are skipped, **unless** 20 samples in a row (0.2 s) fail the test. Then the measurement is accepted again and `_Phat` is first widened to `P_RESYNC` (9.5 rad² ≈ 10 cm), so the filter actually catches up, because the estimate is wrong, not the sensor. The counter is cleared in `resetStateEstimator()`. Without this re-sync a wrong initial guess (e.g. ValueOut1 left at 0) locks the filter out forever. In the simulation the pure 3-sigma gate ends 465 mm off, while the re-sync version ends 5 mm off.
 
 Simulation results (simulated approach from 0.45 m to about 0.18 m, noise from the real recordings): about 6 mm RMSE for the filter, 22 mm for the sensor alone, 91 mm for the prediction alone. Without the gate a single drop-out moves the estimate by about 125 mm.
 
@@ -36,7 +36,7 @@ Simulation results (simulated approach from 0.45 m to about 0.18 m, noise from t
 
 ```cpp
 K(0) = 2.0;                            // starting guess [1/s]; POSITIVE with the template law (see below), tune it on the robot
-_Phat(0,0) = P0_STATE;                 // 9.5 rad^2 = (0.10 m / R_WHEEL)^2 = 10 cm initial uncertainty (state_estimator.h)
+_Phat(0,0) = P0_STATE;                 // (0.005 m / R_WHEEL)^2 = 0.0237 rad^2: ruler uncertainty of the start distance (state_estimator.h)
 _xhat(0) = readValue(1)*Meas2State;    // initial distance in metres typed in ValueOut1
 ```
 

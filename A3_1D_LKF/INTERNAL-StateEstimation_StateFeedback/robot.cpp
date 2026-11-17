@@ -116,7 +116,7 @@ void Robot::resetController(){
 void Robot::resetStateEstimator() {
   // Initialize state covariance matrix
   _Phat.Fill(0);      // Initialize the covariance matrix
-  _Phat(0,0) = P0_STATE;  // (0.10 m / R_WHEEL)^2 = 10 cm initial uncertainty, see state_estimator.h
+  _Phat(0,0) = P0_STATE;  // (0.005 m / R_WHEEL)^2: ruler uncertainty of the start distance, see state_estimator.h
 
   // Initialize state estimate
   _xhat(0) = readValue(1)*Meas2State;   // initial distance [m] typed in ValueOut1 (ruler), converted to rad

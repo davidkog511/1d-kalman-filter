@@ -59,7 +59,7 @@ void CorrectionUpdate(const BLA::Matrix<1> &y, BLA::Matrix<1> &xhat, BLA::Matrix
       return;
     }
     // Re-sync: the estimate is off. Widen P so this measurement pulls the estimate back.
-    _Phat(0,0) = P0_STATE;
+    _Phat(0,0) = P_RESYNC;
     S = H * _Phat * ~H + R;
   }
   rejected = 0;
