@@ -16,7 +16,8 @@ data/A2/               R1-R5 logs (QRoboticsCenter CSV) used by Assignment 2
 data/A3/               logs for Assignment 3 (sensor_still.csv, wall_approach.csv, ...)
 
 A2_prediction_model/   Assignment2_solution.ipynb  (wheel odometry 1D, IMU 2D, heading-position covariance in 2.3)
-A3_1D_LKF/             Assignment3_LKF.ipynb, README.md (model, values, robot tests)
+A3_1D_LKF/             Assignment3_LKF.ipynb (main), Assignment3_extensions.ipynb, appendix_analysis.ipynb (not for
+                       submission), README.md (model, values, robot tests)
   INTERNAL-StateEstimation_StateFeedback/   Arduino sketch for A3 (folder name = .ino name)
 test_firmware/
   INTERNAL-Identification/                  Arduino sketch that recorded R1-R5 (buttons 1/2 = test sequences)
@@ -30,7 +31,7 @@ Don't edit `course_material/`. Copy a notebook out of it if you want to work on 
 
 ## Running the notebooks
 
-1. Python 3.10+ with `numpy pandas matplotlib scipy jupyter`. The A3 notebook also needs `scikit-learn`, `statsmodels` and `plotly`, but only for the course appendix cell.
+1. Python 3.10+ with `numpy pandas matplotlib scipy jupyter`. The A3 extensions need `scikit-learn`. The extensions and the appendix notebook run the code cells of `Assignment3_LKF.ipynb` themselves, so each notebook can be run on its own.
 2. Open the notebook from **its own folder** (e.g. `jupyter lab` in the repo root, then open `A2_prediction_model/Assignment2_solution.ipynb`). The notebooks do `sys.path.insert(0, '..')` to import `mr_common`, and read logs from `data/` through `mr_common.DATA_A2` / `DATA_A3`.
 3. To read a new log: `load_log(DATA_A3 / 'file.csv', firmware='state_feedback')`. The `firmware` key says which `robot.cpp` wrote the log, so the columns get the right names (see `COLUMN_MAPS` in `mr_common.py` and the firmware column in `LOGBOOK.md`).
 4. Check that the stored A2 constants still match the data with `python mr_common.py`. Every line should say `OK`.

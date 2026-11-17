@@ -45,5 +45,5 @@ Names follow CLAUDE.md. `<n>` = run number, distances in mm from the ruler.
 
 | File | Firmware | Test | Used for |
 |---|---|---|---|
-| `W<n>_start<mm>_end<mm>.csv` | `identification_a3` button 1, or `state_feedback` (estimator only) | Drive or push towards the wall from ≤ 300 mm | Offline replay of the filter (A3 notebook section 5) |
+| `W<n>_start<mm>_end<mm>.csv` | `identification_a3` button 1, or `state_feedback` (estimator only) | Drive or push towards the wall from ≤ 300 mm | Offline replay of the filter (A3 main notebook, section 6) |
 | `M<n>_lifted.csv` | `identification_a3` button 2 | Voltage steps, robot lifted | Motor model (extended A3 case) |

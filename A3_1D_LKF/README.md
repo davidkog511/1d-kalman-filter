@@ -7,7 +7,9 @@ KU Leuven, Mobile Robotics, Assignment 3 (mandatory simple case: the state is on
 
 | File | What it is |
 |---|---|
-| `Assignment3_LKF.ipynb` | Model derivation, noise estimation, simulation of a wall approach, offline replay of a real recording, and a check that its values equal the firmware's. Section 7 (extension, offline only): motor model from `M1_lifted` and the floor drives, and a 3-state filter [−d/R, ωA, ωB] with the voltages as input, compared with the mandatory filter |
+| `Assignment3_LKF.ipynb` | **Main notebook (for submission):** design table, prediction model, sensor calibration, R(d), Q(ω), filter and gate, held-out validation on W1–W3, firmware consistency check, closed-loop tests C1–C5, conclusions |
+| `Assignment3_extensions.ipynb` | **Extensions (for submission), offline only:** motor model, 3-state filter [−d/R, ωA, ωB] with the voltages as input, IMU filter, one comparison table incl. a missing encoder |
+| `appendix_analysis.ipynb` | **Not for submission:** analysis details (calibration forms, synthetic simulation, k and σ_cal scans, electrical regression, per-channel NIS) |
 | `INTERNAL-StateEstimation_StateFeedback/` | The Arduino sketch: template with `robot.cpp` and `state_estimator.cpp` completed. Compiles for the Arduino Mega (`arduino:avr:mega`) with the course libraries (now in `../libraries/`); not yet run on the robot |
 | `../A2_prediction_model/Assignment2_solution.ipynb` | Assignment 2 prediction models (wheel odometry 1D, IMU 2D). Section 2.3 adds the coupling of heading uncertainty into the x, y covariance (EKF Jacobian of the rotation; the mean is unchanged), following the feedback on the submission. The 1D filter uses scenario 1 only, which is not affected. |
 
@@ -32,7 +34,7 @@ The front sensor has drop-outs that read 24.78 m. `CorrectionUpdate` therefore h
 * on the **calibrated** distance: readings outside 0.04–0.32 m are skipped (Sharp GP2Y0A41SK range ~0.04–0.30 m plus margin);
 * innovations above 3 sigma (`nu^2 > 9 * S`) are skipped, **unless** 20 samples in a row (0.2 s) fail the test. Then the measurement is accepted again and `_Phat` is first widened to `P_RESYNC` (9.5 rad² ≈ 10 cm), so the filter actually catches up, because the estimate is wrong, not the sensor. The counter is cleared in `resetStateEstimator()`. Without this re-sync a wrong initial guess (e.g. ValueOut1 left at 0) locks the filter out forever. In the simulation (deliberately wrong start at 0 m, true 300 mm) the pure 3-sigma gate ends 312 mm off, the re-sync version 0.2 mm.
 
-**Validation on the real drives W1–W3** (offline replay, notebook section 5; start 300 mm, end 42–45 mm, 3.5 V):
+**Validation on the real drives W1–W3** (offline replay, main notebook section 6; start 300 mm, end 42–45 mm, 3.5 V):
 
 | | W1 | W2 | W3 |
 |---|---|---|---|
@@ -45,9 +47,9 @@ The front sensor has drop-outs that read 24.78 m. `CorrectionUpdate` therefore h
 
 End error vs tape: rms 3.7 mm for held-out runs (S-only calibration: 7.7 mm). It is set by the calibration, not by the filter: after the stop the estimate converges to the calibrated sensor, the same for every Q and R. With the final calibration: constant A2 Q gives NIS 1.06 while driving (15 rejections), Q(ω) with k = 0.05 gives 0.93 (9), k = 0.10 (before the refit) 0.78; R(d) with σ_cal = 2 mm is justified by the calibration residuals (rms 3.9 mm), 1.5 mm would give NIS 1.11; constant R gives more rejections (23 while driving, 441 in total, 1 re-sync). Most rejections in total are W1 standing still before the drive, where the reading jumps between two ADC levels.
 
-Simulation (sections 3–4, synthetic drives with a 2 mm calibration error): filter 1.6 mm RMSE, calibrated sensor 1.7 mm, prediction only 9.2 mm; starting at 0.45 m (outside the sensor range) 2.9 mm.
+Simulation (appendix notebook, synthetic drives with a 2 mm calibration error): filter 1.6 mm RMSE, calibrated sensor 1.7 mm, prediction only 9.2 mm; starting at 0.45 m (outside the sensor range) 2.9 mm.
 
-**Closed loop on the robot (C1–C5, notebook section 8):** settles within 5 mm in 1.0–1.7 s, overshoot ≤ 1.5 mm in the plain steps (3 mm after the push in C5), holds the estimate on the target within 0.1 mm (innovation std 0.8–3 mm, √P ≈ 0.35 mm). The estimate ends 5–10 mm further than the tape because the calibrated sensor reads that much more in this set-up (estimate = calibrated sensor within 0.1 mm), not because of the filter. Hand in front of the sensor (C4): rejected for 0.2 s, then re-sync. Hard start at ≈ 10 rad/s (C2): NIS ≈ 1.6 with k = 0.05 in the fast part (k ≈ 0.15–0.28 would give ≈ 1); one run, k not changed. C1–C5 were recorded with K = +2 and the flipped formula, identical to the template formula with K = −2.
+**Closed loop on the robot (C1–C5, main notebook section 8):** settles within 5 mm in 1.0–1.7 s, overshoot ≤ 1.5 mm in the plain steps (3 mm after the push in C5), holds the estimate on the target within 0.1 mm (innovation std 0.8–3 mm, √P ≈ 0.35 mm). The estimate ends 5–10 mm further than the tape because the calibrated sensor reads that much more in this set-up (estimate = calibrated sensor within 0.1 mm), not because of the filter. Hand in front of the sensor (C4): rejected for 0.2 s, then re-sync. Hard start at ≈ 10 rad/s (C2): NIS ≈ 1.6 with k = 0.05 in the fast part (k ≈ 0.15–0.28 would give ≈ 1); one run, k not changed. C1–C5 were recorded with K = +2 and the flipped formula, identical to the template formula with K = −2.
 
 ## Values to fill in `robot.cpp`
 
@@ -76,7 +78,7 @@ Reference: the GitLab template saved in [`../course_material/A3_1D_LKF/template/
 
 ## Tests to run on the robot
 
-1. **Sensor noise.** Robot still about 20 cm from the wall, no buttons, record 15 s. Save as `S_<dist>mm.csv` (e.g. `S_200mm.csv`). Done for 50–300 mm: the notebook (sections 2.2, 2.3) fits the calibration and R(d) on these files.
+1. **Sensor noise.** Robot still about 20 cm from the wall, no buttons, record 15 s. Save as `S_<dist>mm.csv` (e.g. `S_200mm.csv`). Done for 50–300 mm: the main notebook (sections 2–3) fits the calibration and R(d) on these files.
 2. **Estimator only.** Start about 30 cm from the wall (inside the sensor range, 4–30 cm), measure the start distance with the ruler and type it in ValueOut1, press Button 1, push the robot by hand to about 20 cm, record as `W<n>_start<mm>_end<mm>.csv` (start and end distance from the ruler), measure the end distance with a ruler. Replay offline in section 5 of the notebook and compare with channel 9.
 3. **Closed loop.** Wheels lifted: check the direction. Floor: type the ruler distance in ValueOut1 and the reference in ValueOut0, press Button 1 then Button 0, tune `K`, record the best run.
 4. **Robustness (optional).** Wave a hand in front of the sensor to show the gate works; start with a wrong initial distance to show convergence.
