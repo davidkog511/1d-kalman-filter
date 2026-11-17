@@ -7,7 +7,7 @@ KU Leuven, Mobile Robotics, Assignment 3 (mandatory simple case: the state is on
 
 | File | What it is |
 |---|---|
-| `Assignment3_LKF.ipynb` | Model derivation, noise estimation, simulation of a wall approach, offline replay of a real recording, and a check that its values equal the firmware's |
+| `Assignment3_LKF.ipynb` | Model derivation, noise estimation, simulation of a wall approach, offline replay of a real recording, and a check that its values equal the firmware's. Section 7 (extension, offline only): motor model from `M1_lifted` and the floor drives, and a 3-state filter [−d/R, ωA, ωB] with the voltages as input, compared with the mandatory filter |
 | `INTERNAL-StateEstimation_StateFeedback/` | The Arduino sketch: template with `robot.cpp` and `state_estimator.cpp` completed. Compiles for the Arduino Mega (`arduino:avr:mega`) with the course libraries (now in `../libraries/`); not yet run on the robot |
 | `../A2_prediction_model/Assignment2_solution.ipynb` | Assignment 2 prediction models (wheel odometry 1D, IMU 2D). Section 2.3 adds the coupling of heading uncertainty into the x, y covariance (EKF Jacobian of the rotation; the mean is unchanged), following the feedback on the submission. The 1D filter uses scenario 1 only, which is not affected. |
 
