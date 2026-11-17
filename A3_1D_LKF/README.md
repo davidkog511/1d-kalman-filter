@@ -55,16 +55,11 @@ Template log channels (`writeValue`): 0 uA, 1 uB, 2 posA, 3 posB, 4 spA, 5 spB, 
 
 ## Instructions for a generative AI assistant (Claude, ChatGPT, ...)
 
-Follow these steps in this order. Do not skip the verification steps.
+The AI-assistant rules are in [`../CLAUDE.md`](../CLAUDE.md). The steps below conflict with CLAUDE.md and stay here until the team decides; CLAUDE.md wins in the meantime.
 
-1. **Read the assignment first.** Read the assignment notebook and the template (`robot.cpp`, `robot.h`, `state_estimator.cpp`, `state_estimator.h`). Find out which unit the state uses (look for `Meas2State`), which channels are logged (`writeValue`) and where the `??` placeholders are. Do not guess these from memory.
-2. **Reuse the prediction model of Assignment 2** (wheel odometry, 1D): `F = 1`, `B = dt`, input = mean wheel speed, `Q` from the speed noise at constant voltage. Convert it to the state unit of the template (rad) and note the sign: forward driving increases `x = -d/R_WHEEL`.
-3. **Measure the noise from real data**, do not invent it: `sigma_v` from the steady parts of a constant-voltage drive, `sigma_d` from a stationary part of a recording. Inspect the raw CSV to find which column is the front distance and check it (stable when still, drop-outs at 24.78 m). If the channel is inferred from data and not from source code, say so.
-4. **Build the notebook**: model, noise estimation, a simulated wall approach (sensor noise from the data, drop-outs, a few percent unknown wheel-speed scale error, wrong initial guess), comparison filter vs. sensor vs. prediction only, the effect of the innovation gate, a consistency check (normalised innovation squared should have mean about 1), and a sensitivity check on scaling `Q` and `R`. State clearly that the wall approach is simulated until a real recording exists.
 5. **Generate the C++** from the notebook values and check that the arithmetic is consistent with the template (`~H`, `~F`, `Inverse(S)`, the gate before the Kalman gain).
 6. **Fill in `robot.cpp`** only at the `??` placeholders (`K`, `_Phat`, `_xhat`). Do not touch the velocity controller. Explain the sign of `K`.
-7. **Guide the user through the tests above** one at a time, and ask for the recordings before claiming anything works. Replay each real recording through the same filter offline and compare with the on-board estimate (channel 9).
-8. **Be honest about limits**: the code is not compiled until the user compiles it, the simulated results are not robot results, `R` was measured at one distance only (the sensor noise grows with distance), and the wheel-speed error is partly a bias that white-noise `Q` does not represent (a larger `Q` may help; check with the innovation test).
+8. **Be honest about limits**: the code is not compiled until the user compiles it.
 
 ### Ready-to-paste prompt
 
