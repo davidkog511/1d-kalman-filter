@@ -3,15 +3,29 @@
 // 1D linear Kalman filter for the distance to the wall in front of the robot.
 //   state   x = wheel angle relative to the wall [rad] = -d / R_WHEEL   (Meas2State in robot.h)
 //   input   u = [speed motor A, speed motor B] [rad/s]  ->  v = (uA + uB) / 2   (Assignment 2, scenario 1)
-//   measure y = front distance [m],  H = -R_WHEEL
+//   measure y = getFrontDistance() [m] (library curve), calibrated to d [m] before the update,  H = -R_WHEEL
 //   sigma_v = 5.90 mm/s = 0.182 rad/s (wheel speed at constant voltage) -> Q = (TSAMPLE*sigma_omega)^2
-//   sigma_d = 21.8 mm   (sensor, robot still)                            -> R = sigma_d^2
+//   R(d) from the ADC quantisation of the sensor, fitted on data/A3/S_50mm ... S_300mm
+// All numbers come from A3_1D_LKF/Assignment3_LKF.ipynb (section 2.2), which checks that they match.
 
 static const float Q_PROCESS = 3.299516e-06f;   // [rad^2]
-static const float R_MEAS    = 4.751152e-04f;   // [m^2]
+
+// Calibration: d = CAL_C2*m^2 + CAL_C1*m + CAL_C0, m = getFrontDistance() [m], d = tape distance from the
+// robot's front edge [m] (absorbs the library-curve error and the sensor mounting offset). Valid 50-300 mm.
+static const float CAL_C2 = -7.9941233e-01f;   // [1/m]
+static const float CAL_C1 =  1.1818477e+00f;   // [-]
+static const float CAL_C0 = -2.7432337e-02f;   // [m]
+
+// Library curve of the sensor (sharp41S.cpp): m = SHARP_A/raw + SHARP_B, raw = ADC counts
+static const float SHARP_A = 24.7694f;          // [m * count]
+static const float SHARP_B = 0.0109311f;        // [m]
+// Measurement noise: NOISE_C ADC counts (std), so sigma_d = NOISE_C * dd/dm * (m - SHARP_B)^2 / SHARP_A
+static const float NOISE_C = 8.2967843e-01f;   // [counts]
+
+static const float M_RAW_MAX = 0.70f;           // [m] sanity check on m: drop-outs read 24.78, NaN/inf; keeps the calibration one-to-one
+static const float D_MIN     = 0.04f;           // [m] valid range of the CALIBRATED distance (Sharp GP2Y0A41SK: ~0.04-0.30 m)
+static const float D_MAX     = 0.32f;           // [m] 0.30 m plus margin
 static const float GATE      = 9.0f;            // innovation gate nu^2 / S (3 sigma): rejects implausible measurements
-static const float D_MIN     = 0.04f;           // [m] valid range of the Sharp GP2Y0A41SK: ~0.04-0.30 m;
-static const float D_MAX     = 0.35f;           // [m] 0.35 m upper limit for margin (drop-outs read 24.78 m)
 static const int   MAX_REJECT = 20;             // after 20 gated samples in a row (0.2 s), accept again: recovers from a wrong initial guess
 static int rejected = 0;                        // number of consecutive gated samples
 
@@ -35,24 +49,37 @@ void PredictionUpdate(const BLA::Matrix<2> &u, BLA::Matrix<1> &xhat,BLA::Matrix<
 }
 
 void CorrectionUpdate(const BLA::Matrix<1> &y, BLA::Matrix<1> &xhat, BLA::Matrix<1> &nu,BLA::Matrix<1> &_Phat) {
-  // Tuning parameter
-  BLA::Matrix<1,1> R = { R_MEAS };
+  float m = y(0);                                 // library distance [m]
+
+  // Reject drop-outs (24.78 m), NaN and inf on the raw value. nu = 0 marks a rejected reading.
+  if (!(m > SHARP_B && m < M_RAW_MAX)) {
+    nu(0) = 0.0f;
+    return;
+  }
+
+  // Calibrate, then check the range on the calibrated distance
+  float d = (CAL_C2*m + CAL_C1)*m + CAL_C0;       // [m]
+  if (!(d >= D_MIN && d <= D_MAX)) {
+    nu(0) = 0.0f;
+    return;
+  }
+
+  // Measurement noise R(d): one ADC count is worth dd/draw = dd/dm * (m - SHARP_B)^2 / SHARP_A metres
+  float dd_dm = 2.0f*CAL_C2*m + CAL_C1;
+  float sigma_d = NOISE_C * dd_dm * (m - SHARP_B)*(m - SHARP_B) / SHARP_A;
+  BLA::Matrix<1,1> R = { sigma_d*sigma_d };
 
   // Compute Jacobian of measurement equation
   BLA::Matrix<1,1> H = { -R_WHEEL };              // distance = -R_WHEEL * x
 
   // Compute innovation
-  nu = y - H*xhat;
+  BLA::Matrix<1> z = { d };
+  nu = z - H*xhat;
 
   // Set estimator gain
   BLA::Matrix<1,1> S = H * _Phat * ~H + R;
 
-  // Reject readings outside the sensor range (also catches inf/NaN), and implausible measurements
-  // unless they persist (then the estimate is wrong, not the sensor). nu = 0 marks a rejected reading.
-  if (!(y(0) >= D_MIN && y(0) <= D_MAX)) {
-    nu(0) = 0.0f;
-    return;
-  }
+  // Reject implausible measurements unless they persist (then the estimate is wrong, not the sensor)
   if (nu(0)*nu(0) > GATE*S(0,0)) {
     if (++rejected <= MAX_REJECT) {
       nu(0) = 0.0f;
