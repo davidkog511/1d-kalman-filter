@@ -21,6 +21,9 @@ static const float SHARP_A = 24.7694f;          // [m * count]
 static const float SHARP_B = 0.0109311f;        // [m]
 // Measurement noise: NOISE_C ADC counts (std), so sigma_d = NOISE_C * dd/dm * (m - SHARP_B)^2 / SHARP_A
 static const float NOISE_C = 8.2967843e-01f;   // [counts]
+// Calibration floor: the calibration is only as good as the tape placement (residual rms 1.2 mm, max ~3 mm).
+// Added to R as if it were white noise: a pragmatic approximation, the calibration error is systematic.
+static const float SIGMA_CAL = 0.002f;          // [m]
 
 static const float M_RAW_MAX = 0.70f;           // [m] sanity check on m: drop-outs read 24.78, NaN/inf; keeps the calibration one-to-one
 static const float D_MIN     = 0.04f;           // [m] valid range of the CALIBRATED distance (Sharp GP2Y0A41SK: ~0.04-0.30 m)
@@ -64,10 +67,11 @@ void CorrectionUpdate(const BLA::Matrix<1> &y, BLA::Matrix<1> &xhat, BLA::Matrix
     return;
   }
 
-  // Measurement noise R(d): one ADC count is worth dd/draw = dd/dm * (m - SHARP_B)^2 / SHARP_A metres
+  // Measurement noise R(d): one ADC count is worth dd/draw = dd/dm * (m - SHARP_B)^2 / SHARP_A metres,
+  // plus the calibration floor SIGMA_CAL^2
   float dd_dm = 2.0f*CAL_C2*m + CAL_C1;
   float sigma_d = NOISE_C * dd_dm * (m - SHARP_B)*(m - SHARP_B) / SHARP_A;
-  BLA::Matrix<1,1> R = { sigma_d*sigma_d };
+  BLA::Matrix<1,1> R = { sigma_d*sigma_d + SIGMA_CAL*SIGMA_CAL };
 
   // Compute Jacobian of measurement equation
   BLA::Matrix<1,1> H = { -R_WHEEL };              // distance = -R_WHEEL * x

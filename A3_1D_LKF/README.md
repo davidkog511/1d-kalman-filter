@@ -24,7 +24,7 @@ The template's `robot.h` defines `Meas2State = -1/R_WHEEL`, so the state is the 
 | Q | `(TSAMPLE * sigma_omega)^2` = 3.3e-6 rad^2 | `sigma_omega = sigma_v / R_WHEEL`, `sigma_v` = 5.9 mm/s = spread of the wheel speed at constant voltage (Assignment 2, run R4) |
 | H | `-R_WHEEL` | the **calibrated** sensor measures `d = -R_WHEEL * x` |
 | Calibration | `d = CAL_C2*m^2 + CAL_C1*m + CAL_C0`, m = `getFrontDistance()` | quadratic fit on the static recordings `data/A3/S_50mm` … `S_300mm` (tape distance from the robot's front edge; absorbs the library-curve bias of +17…+71 mm and the sensor mounting offset). Valid 50–300 mm only |
-| R | `R(d) = (NOISE_C * dd/dm * (m - 0.0109)^2 / 24.7694)^2`, evaluated every step | ADC quantisation: one count is worth more distance further away (≈ d²). NOISE_C = 0.83 counts fitted on the S recordings; σ ≈ 0.1 mm at 50 mm, 2.6 mm at 300 mm |
+| R | `R(d) = (NOISE_C * dd/dm * (m - 0.0109)^2 / 24.7694)^2 + SIGMA_CAL^2`, evaluated every step | ADC quantisation: one count is worth more distance further away (≈ d²). NOISE_C = 0.83 counts fitted on the S recordings; σ ≈ 0.1 mm at 50 mm, 2.6 mm at 300 mm. SIGMA_CAL = 2 mm: floor for the calibration error (residual rms 1.2 mm, max ~3 mm), treated as white noise although it is systematic (pragmatic approximation); √R ≈ 2.0–3.2 mm |
 
 The front sensor has drop-outs that read 24.78 m. `CorrectionUpdate` therefore has a **gate**:
 
