@@ -4,11 +4,13 @@
 //   state   x = wheel angle relative to the wall [rad] = -d / R_WHEEL   (Meas2State in robot.h)
 //   input   u = [speed motor A, speed motor B] [rad/s]  ->  v = (uA + uB) / 2   (Assignment 2, scenario 1)
 //   measure y = getFrontDistance() [m] (library curve), calibrated to d [m] before the update,  H = -R_WHEEL
-//   sigma_v = 5.90 mm/s = 0.182 rad/s (wheel speed at constant voltage) -> Q = (TSAMPLE*sigma_omega)^2
+//   Q(v) = TSAMPLE^2 * (SIGMA_OMEGA^2 + (K_SLIP*v)^2): wheel-speed noise (A2, at constant voltage) plus a
+//   speed-dependent part for slip (odometry error grows with the distance driven, sign changes between runs)
 //   R(d) from the ADC quantisation of the sensor, fitted on data/A3/S_50mm ... S_300mm
 // All numbers come from A3_1D_LKF/Assignment3_LKF.ipynb (section 2.2), which checks that they match.
 
-static const float Q_PROCESS = 3.299516e-06f;   // [rad^2]
+static const float SIGMA_OMEGA = 1.8164569e-01f; // [rad/s] = sigma_v / R_WHEEL, sigma_v = 5.90 mm/s (A2, run R4)
+static const float K_SLIP      = 0.10f;          // [-] slip noise per unit wheel speed, chosen on W1-W3 (mean NIS ~ 1 while driving)
 
 // Calibration: d = CAL_C2*m^2 + CAL_C1*m + CAL_C0, m = getFrontDistance() [m], d = tape distance from the
 // robot's front edge [m] (absorbs the library-curve error and the sensor mounting offset). Valid 50-300 mm.
@@ -25,7 +27,9 @@ static const float NOISE_C = 8.2967843e-01f;   // [counts]
 // Added to R as if it were white noise: a pragmatic approximation, the calibration error is systematic.
 static const float SIGMA_CAL = 0.002f;          // [m]
 
-static const float M_RAW_MAX = 0.70f;           // [m] sanity check on m: drop-outs read 24.78, NaN/inf; keeps the calibration one-to-one
+static const float M_RAW_MAX = 0.40f;           // [m] limit on m: drop-outs read 24.78, NaN/inf. The calibration is fitted up to
+                                                //     m = 0.371 m, beyond 30 cm the sensor over-reads (40 cm reads 0.525 m),
+                                                //     and the quadratic folds back above m = 0.74 m
 static const float D_MIN     = 0.04f;           // [m] valid range of the CALIBRATED distance (Sharp GP2Y0A41SK: ~0.04-0.30 m)
 static const float D_MAX     = 0.32f;           // [m] 0.30 m plus margin
 static const float GATE      = 9.0f;            // innovation gate nu^2 / S (3 sigma): rejects implausible measurements
@@ -43,8 +47,9 @@ void PredictionUpdate(const BLA::Matrix<2> &u, BLA::Matrix<1> &xhat,BLA::Matrix<
   BLA::Matrix<1,1> F = { 1.0f };
   BLA::Matrix<1,1> B = { TSAMPLE };
 
-  BLA::Matrix<1,1>Q = { Q_PROCESS };
   BLA::Matrix<1,1>v = { 0.5f * (u(0) + u(1)) };   // mean wheel speed [rad/s]
+  float q_w = SIGMA_OMEGA*SIGMA_OMEGA + K_SLIP*K_SLIP*v(0)*v(0);   // variance of the speed error [rad^2/s^2]
+  BLA::Matrix<1,1>Q = { TSAMPLE*TSAMPLE*q_w };     // Q = B q_w B^T [rad^2]
 
   // Evaluate discrete-time system dynamics
   xhat = F*xhat + B*v;
