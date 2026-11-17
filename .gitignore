@@ -221,3 +221,15 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# ---- Mobile Robotics team additions ----
+# Jupyter / Python (also covered above, repeated here for clarity)
+.ipynb_checkpoints/
+__pycache__/
+# Arduino build output (arduino-cli --export-binaries, IDE exports)
+**/build/
+*.hex
+*.elf
+*.bin
+*.eep
+# CSV logs in data/ are tracked on purpose: do not add *.csv here
