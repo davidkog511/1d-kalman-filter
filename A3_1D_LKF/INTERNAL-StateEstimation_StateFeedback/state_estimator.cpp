@@ -10,7 +10,9 @@
 // All numbers come from A3_1D_LKF/Assignment3_LKF.ipynb (section 2.2), which checks that they match.
 
 static const float SIGMA_OMEGA = 1.8164569e-01f; // [rad/s] = sigma_v / R_WHEEL, sigma_v = 5.90 mm/s (A2, run R4)
-static const float K_SLIP      = 0.10f;          // [-] slip noise per unit wheel speed, chosen on W1-W3 (mean NIS ~ 1 while driving)
+static const float K_SLIP      = 0.05f;          // [-] slip noise per unit wheel speed, chosen on W1-W3 with the final
+                                                 //     calibration (mean NIS 0.93 while driving); was 0.10 with the S-only
+                                                 //     calibration, when part of the mismatch was calibration error, not slip
 
 // Calibration: d = CAL_C2*m^2 + CAL_C1*m + CAL_C0, m = getFrontDistance() [m], d = tape distance from the
 // robot's front edge [m] (absorbs the library-curve error and the sensor mounting offset). Fitted on the static
