@@ -47,6 +47,8 @@ End error vs tape: rms 3.7 mm for held-out runs (S-only calibration: 7.7 mm). It
 
 Simulation (sections 3–4, synthetic drives with a 2 mm calibration error): filter 1.6 mm RMSE, calibrated sensor 1.7 mm, prediction only 9.2 mm; starting at 0.45 m (outside the sensor range) 2.9 mm.
 
+**Closed loop on the robot (C1–C5, notebook section 8):** settles within 5 mm in 1.0–1.7 s, overshoot ≤ 1.5 mm in the plain steps (3 mm after the push in C5), holds the estimate on the target within 0.1 mm (innovation std 0.8–3 mm, √P ≈ 0.35 mm). The estimate ends 5–10 mm further than the tape because the calibrated sensor reads that much more in this set-up (estimate = calibrated sensor within 0.1 mm), not because of the filter. Hand in front of the sensor (C4): rejected for 0.2 s, then re-sync. Hard start at ≈ 10 rad/s (C2): NIS ≈ 1.6 with k = 0.05 in the fast part (k ≈ 0.15–0.28 would give ≈ 1); one run, k not changed. C1–C5 were recorded with K = +2 and the flipped formula, identical to the template formula with K = −2.
+
 ## Values to fill in `robot.cpp`
 
 ```cpp
