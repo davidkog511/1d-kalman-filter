@@ -11,13 +11,16 @@ Date and time come from the first line of the CSV (QRoboticsCenter header). All 
 | `data/A2/R3_left_up.csv` | 2026-11-03 14:45 | Left side lifted by hand (16.6 s) | Motors off | `identification` | Used for the IMU mounting yaw (PSI). |
 | `data/A2/R4_straight_fwd700mm_right190mm_turnR15deg.csv` | 2026-11-03 14:48 | Button 1: straight drive (53.3 s) | 30 s still, then 2 s at +6 V on both motors. End position by tape measure: 700 mm forward, 190 mm right. | `identification` | The 15° heading in the file name is **wrong**. From the end position the heading is about −30°. Slip and yaw at 32.5–32.9 s. Static window 5–29.5 s. Source of sigma_v and Q1. |
 | `data/A2/R5_rotation_CW.csv` | 2026-11-03 14:55 | Button 2: rotation in place, clockwise (25.6 s) | 5 s still, 8 s at ±4 V, 8 s at ±8 V (A forward, B backward) | `identification` | Lever arm R_ARM and gyro tilt. The wheels over-count the yaw rate by about 7 % (skid). |
+| `data/A3/log_gpio_23-10-2026_17-14-58.csv` (**not pushed yet**, on Toghrul's machine in `C:\Users\User\QRCrecords`) | 2026-10-23 17:14 | Early test before R1–R5: still, forward, still, spin, still, spin the other way | Not recorded | unknown (older robot.cpp, no column map) | Original QRC name kept. Toghrul's first A2 notebook read ValueIn0/1 = voltage, 2/3 = wheel speed, 4/5 = wheel angle, 6/7 = accel x/y, 11 = a gyro axis seeing ~5 % of the yaw rate. The A3 notebook takes R (sensor noise) from ValueIn9, which is **inferred from the data** (stable at 0.35 m when still, drop-outs at 24.78 m), not from the source code. At 0.35 m the robot was above the sensor's valid range. |
 
 Battery voltage was not recorded for any of these logs.
 
-## Logs referenced in notebooks but not in the repo yet
+## Planned A3 recordings (not recorded yet)
 
-| File | Where it is used | Status |
-|---|---|---|
-| `log_gpio_23-10-2026_17-14-58.csv` | `A3_1D_LKF/Assignment3_LKF.ipynb` (fallback for R = sigma_d², front distance assumed on ValueIn9) | On Toghrul's machine (`C:\Users\User\QRCrecords`). Recorded with an older firmware whose column map is unknown. The notebook infers the front-distance channel from the data. **Toghrul: push it to `data/A3/` and add a row with what was recorded.** |
-| `sensor_still.csv` | A3 notebook section 2.2 (test 1 in `A3_1D_LKF/README.md`) | Not recorded yet. |
-| `wall_approach.csv` | A3 notebook section 5 (test 2/3) | Not recorded yet. |
+Names follow CLAUDE.md. `<n>` = run number, distances in mm from the ruler.
+
+| File | Firmware | Test | Used for |
+|---|---|---|---|
+| `S_<dist>mm.csv` | `identification_a3`, no button | Robot still at `<dist>` from the wall (40–300 mm), 15 s | R = sigma_d² (A3 notebook 2.2). Several distances show how the noise grows with distance. |
+| `W<n>_start<mm>_end<mm>.csv` | `identification_a3` button 1, or `state_feedback` (estimator only) | Drive or push towards the wall from ≤ 300 mm | Offline replay of the filter (A3 notebook section 5) |
+| `M<n>_lifted.csv` | `identification_a3` button 2 | Voltage steps, robot lifted | Motor model (extended A3 case) |
