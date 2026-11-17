@@ -50,31 +50,27 @@ Simulation (sections 3–4, synthetic drives with a 2 mm calibration error): fil
 ## Values to fill in `robot.cpp`
 
 ```cpp
-K(0) = 2.0;                            // starting guess [1/s]; POSITIVE with the template law (see below), tune it on the robot
+K(0) = -2.0;                           // [1/s] NEGATIVE with the template law (see below), tune it on the robot
 _Phat(0,0) = P0_STATE;                 // (0.005 m / R_WHEEL)^2 = 0.0237 rad^2: ruler uncertainty of the start distance (state_estimator.h)
-_xhat(0) = readValue(1)*Meas2State;    // initial distance in metres typed in ValueOut1
+_xhat(0) = readValue(1)*Meas2State;    // initial distance in metres typed in ValueOut1 (checked: 0.04-0.30 m)
 ```
 
-* Template law, unchanged: `desired_velocity = K * (xref - xhat)`. Driving forward increases `x = -d/R`; too far from the wall means `xhat < xref`, so `K > 0` drives forward. Check the sign with the wheels lifted, then raise `K` until the robot is fast but does not oscillate.
-* Both inputs are in **metres**: `ValueOut0` = reference distance, `ValueOut1` = initial distance (ruler). The firmware converts them with `Meas2State`.
+* Template law, unchanged: `desired_velocity = K * (_xhat - xref)`. Driving forward increases `x = -d/R_WHEEL`; too far from the wall means `xhat < xref`, so `xhat - xref < 0` and `K < 0` gives a positive (forward) wheel speed. Check the sign with the wheels lifted, then make `|K|` larger until the robot is fast but does not oscillate.
+* Both inputs are in **metres**: `ValueOut0` = reference distance, `ValueOut1` = initial distance (ruler). The firmware converts them with `Meas2State` and ignores values outside 0.04–0.30 m (message in QRoboticsCenter).
 * Do not change the velocity controller.
 
-Log channels (`writeValue`): 0 uA, 1 uB, 2 posA, 3 posB, 4 spA, 5 spB, 6 xref, 7 front distance (library curve, NOT calibrated) [m], 8 xhat (a priori), 9 xhat (a posteriori), 10 innovation (0 when the reading was rejected), 11 P (a posteriori) [rad^2]. Channels 9–11 are only written while the estimator is on.
+Log channels (`writeValue`, as in the template plus 11): 0 uA, 1 uB, 2 posA, 3 posB, 4 spA, 5 spB, 6 xref, 7 front distance (library curve, NOT calibrated) [m], 8 xhat (a priori), 9 xhat (a posteriori), 10 innovation (0 when the reading was rejected), 11 P (a posteriori) [rad^2]. Channels 9–11 are only written while the estimator is on.
 
 ## Differences from the course template
 
-`robot.cpp` differs from the course template (Sep 25) only where the assignment asks for values (`K`, `_Phat`, `_xhat`) and in the changes below. Changes to comments only are not listed. `state_estimator.cpp/.h` are ours (the template had only `??`).
+Reference: the GitLab template saved in [`../course_material/A3_1D_LKF/template/`](../course_material/A3_1D_LKF/template/) (fetched 2026-11-17; newer than the Sep 25 copy in the course zip). `robot.h` and the `.ino` are identical to it. `robot.cpp` differs only where the template has `??` (`K`, `_Phat`, `_xhat`) and in the rows below; comment-only changes are not listed. `state_estimator.cpp/.h` are ours (the template has only `??`; `ResetGate()`, `P0_STATE`, `P_RESYNC` are added there).
 
 | Change | Why |
 |---|---|
-| Log channels renumbered, P added on 11 | The template writes channels 8 and 9 twice per step, so the a-posteriori estimate and the innovation were overwritten by the wheel angles. Now each signal is logged once. |
-| Control only runs when the estimator is on too (`controlEnabled() && StateEstimationEnabled()`) | With the estimator off, `_xhat` is frozen, so the controller would drive on a stale estimate and never stop. |
+| `xref(0) = readValue(0)*Meas2State` (in `init()` and in the controller; template: `readValue(0)`) | Unit conversion of the operator input only, so ValueOut0 and ValueOut1 are both in metres; the control law itself is unchanged. |
+| Input check: ValueOut0 / ValueOut1 outside 0.04–0.30 m are ignored, with a message (reference: the robot holds; start: start mid-range with `P_RESYNC`, so the estimator syncs to the sensor) | Catches cm/m typos and missing values, which would otherwise drive the robot into the wall or start the filter far off. |
 | `ResetGate()` in `resetStateEstimator()` | The gate's rejected-reading counter lives in `state_estimator.cpp`. Without clearing it, a new run inherits the rejections of the previous one. |
-| `_nu(0) = 0` in `resetStateEstimator()` | After a reset the logged innovation starts at 0 instead of the previous run's last value. |
-| Button 0 message text | Says that control only starts once the estimator is on (row 2). |
-| `speedA`, `speedB` removed from `robot.h` | Unused (never read or written). |
-
-`xref(0) = readValue(0)*Meas2State` is the template line itself, so it is not a difference.
+| `writeValue(11, _Phat(0,0))` | Logs the a-posteriori variance, to check the filter's uncertainty on the robot (channel 11 is unused in the template). |
 
 ## Tests to run on the robot
 
