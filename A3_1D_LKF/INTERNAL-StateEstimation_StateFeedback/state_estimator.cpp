@@ -13,10 +13,12 @@ static const float SIGMA_OMEGA = 1.8164569e-01f; // [rad/s] = sigma_v / R_WHEEL,
 static const float K_SLIP      = 0.10f;          // [-] slip noise per unit wheel speed, chosen on W1-W3 (mean NIS ~ 1 while driving)
 
 // Calibration: d = CAL_C2*m^2 + CAL_C1*m + CAL_C0, m = getFrontDistance() [m], d = tape distance from the
-// robot's front edge [m] (absorbs the library-curve error and the sensor mounting offset). Valid 50-300 mm.
-static const float CAL_C2 = -7.9941233e-01f;   // [1/m]
-static const float CAL_C1 =  1.1818477e+00f;   // [-]
-static const float CAL_C0 = -2.7432337e-02f;   // [m]
+// robot's front edge [m] (absorbs the library-curve error and the sensor mounting offset). Fitted on the static
+// recordings S_50 ... S_300 and the standstill points of the drives W1-W3 (300 mm and 42-45 mm, drive set-up),
+// one point per standstill window. Valid 42-300 mm; closed-loop targets 100-200 mm.
+static const float CAL_C2 = -8.1112216e-01f;   // [1/m]
+static const float CAL_C1 =  1.2277406e+00f;   // [-]
+static const float CAL_C0 = -3.5707847e-02f;   // [m]
 
 // Library curve of the sensor (sharp41S.cpp): m = SHARP_A/raw + SHARP_B, raw = ADC counts
 static const float SHARP_A = 24.7694f;          // [m * count]

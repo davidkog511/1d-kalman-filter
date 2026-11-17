@@ -21,9 +21,9 @@ The template's `robot.h` defines `Meas2State = -1/R_WHEEL`, so the state is the 
 |---|---|---|
 | F | 1 | the wall does not move |
 | B | `TSAMPLE`, applied to `v = (wA + wB)/2` [rad/s] | wheel odometry, the prediction model of Assignment 2 (scenario 1) |
-| Q | `TSAMPLE^2 * (SIGMA_OMEGA^2 + (K_SLIP * v)^2)`, v = (wA + wB)/2: 3.3e-6 rad² standing still, 5.2e-5 rad² at 7 rad/s | `SIGMA_OMEGA = sigma_v / R_WHEEL` = 0.182 rad/s, `sigma_v` = 5.9 mm/s = spread of the wheel speed at constant voltage (Assignment 2, run R4). `K_SLIP` = 0.10: slip grows with speed (the odometry error changes sign between runs: +0.7 % in A2, −0.6 … −3.6 % on W1–W3); chosen so that the mean NIS while driving is ≈ 1 on W1–W3 |
+| Q | `TSAMPLE^2 * (SIGMA_OMEGA^2 + (K_SLIP * v)^2)`, v = (wA + wB)/2: 3.3e-6 rad² standing still, 5.2e-5 rad² at 7 rad/s | `SIGMA_OMEGA = sigma_v / R_WHEEL` = 0.182 rad/s, `sigma_v` = 5.9 mm/s = spread of the wheel speed at constant voltage (Assignment 2, run R4). `K_SLIP` = 0.10: slip grows with speed (the odometry error changes sign between runs: +0.7 % in A2, −0.6 … −3.6 % on W1–W3); chosen on W1–W3 (mean NIS while driving 0.78 with the final calibration: slightly cautious). The speed dependence is **not tested yet**: all W drives ran at 3.5 V |
 | H | `-R_WHEEL` | the **calibrated** sensor measures `d = -R_WHEEL * x` |
-| Calibration | `d = CAL_C2*m^2 + CAL_C1*m + CAL_C0`, m = `getFrontDistance()` | quadratic fit on the static recordings `data/A3/S_50mm` … `S_300mm` (tape distance from the robot's front edge; absorbs the library-curve bias of +17…+71 mm and the sensor mounting offset). Valid 50–300 mm only |
+| Calibration | `d = CAL_C2*m^2 + CAL_C1*m + CAL_C0`, m = `getFrontDistance()` | quadratic fit on the static recordings `data/A3/S_50mm` … `S_300mm` **and** the standstill points of W1–W3 (300 mm before, 42–45 mm after each drive), one point per standstill window (tape distance from the robot's front edge; absorbs the library-curve bias of +17…+71 mm and the sensor mounting offset). At 30 cm the reading depends on the set-up (≈ 4 ADC counts between S and W), hence the drive-set-up points. Valid 42–300 mm; closed-loop targets 100–200 mm |
 | R | `R(d) = (NOISE_C * dd/dm * (m - 0.0109)^2 / 24.7694)^2 + SIGMA_CAL^2`, evaluated every step | ADC quantisation: one count is worth more distance further away (≈ d²). NOISE_C = 0.83 counts fitted on the S recordings; σ ≈ 0.1 mm at 50 mm, 2.6 mm at 300 mm. SIGMA_CAL = 2 mm: floor for the calibration error (residual rms 1.2 mm, max ~3 mm), treated as white noise although it is systematic (pragmatic approximation); √R ≈ 2.0–3.2 mm |
 
 The front sensor has drop-outs that read 24.78 m. `CorrectionUpdate` therefore has a **gate**:
@@ -36,16 +36,16 @@ The front sensor has drop-outs that read 24.78 m. `CorrectionUpdate` therefore h
 
 | | W1 | W2 | W3 |
 |---|---|---|---|
-| filter error at the end vs tape | +7.5 mm | +5.6 mm | +9.5 mm |
-| calibrated sensor at the end vs tape | +7.4 mm | +5.5 mm | +9.4 mm |
+| filter end vs tape, **run held out of the calibration** (leave-one-run-out) | +3.0 mm | +0.6 mm | +5.6 mm |
+| same with the S-only calibration | +7.5 mm | +5.6 mm | +9.5 mm |
 | odometry from the tape start, end vs tape | +1.6 mm | +5.9 mm | +9.3 mm |
-| calibrated sensor at the start vs tape (300 mm) | −11.6 mm | −11.6 mm | −11.6 mm |
-| mean NIS while driving (ideal 1) | 1.08 | 0.86 | 0.78 |
-| 3σ rejections while driving / re-syncs | 9 / 0 | 0 / 0 | 1 / 0 |
+| calibrated sensor at the start vs tape (300 mm), held out | −2.1 mm | −5.8 mm | −6.0 mm |
+| mean NIS while driving (ideal 1), final calibration | 0.89 | 0.78 | 0.67 |
+| 3σ rejections while driving / re-syncs | 7 / 0 | 0 / 0 | 1 / 0 |
 
-The end error is the calibration error of the sensor in these drives (the S calibration does not transfer exactly: at the 300 mm mark S_300 read 0.371 m raw, every W start 0.350 m), not a filter error: it is the same for every Q and R. Compared on the same drives: constant A2 Q gives NIS 1.69 while driving with 64 rejections, Q(ω) with k = 0.10 gives 0.91 with 10; constant R gives NIS 1.01 but more rejections (17 while driving, 434 in total, 1 re-sync) than R(d) (10 / 319, 0). Most rejections in total are W1 standing still before the drive, where the reading jumps between two ADC levels.
+End error vs tape: rms 3.7 mm for held-out runs (S-only calibration: 7.7 mm). It is set by the calibration, not by the filter: after the stop the estimate converges to the calibrated sensor, the same for every Q and R. With the final calibration: constant A2 Q gives NIS 1.06 while driving (15 rejections), Q(ω) with k = 0.10 gives 0.78 (8); R(d) with σ_cal = 1.5 mm would give NIS 1.02, 2 mm is kept because the calibration residuals are rms 3.9 mm; constant R gives more rejections (13 while driving, 431 in total, 1 re-sync). Most rejections in total are W1 standing still before the drive, where the reading jumps between two ADC levels.
 
-Simulation (sections 3–4, synthetic drives with a 2 mm calibration error): filter 1.5 mm RMSE, calibrated sensor 1.6 mm, prediction only 9.2 mm; starting at 0.45 m (outside the sensor range) 2.9 mm.
+Simulation (sections 3–4, synthetic drives with a 2 mm calibration error): filter 1.6 mm RMSE, calibrated sensor 1.7 mm, prediction only 9.2 mm; starting at 0.45 m (outside the sensor range) 2.9 mm.
 
 ## Values to fill in `robot.cpp`
 
