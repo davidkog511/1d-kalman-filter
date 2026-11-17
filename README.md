@@ -20,6 +20,7 @@ A3_1D_LKF/             Assignment3_LKF.ipynb, README.md (model, values, robot te
   INTERNAL-StateEstimation_StateFeedback/   Arduino sketch for A3 (folder name = .ino name)
 test_firmware/
   INTERNAL-Identification/                  Arduino sketch that recorded R1-R5 (buttons 1/2 = test sequences)
+  INTERNAL-Identification-A3/               A3 recordings: button 1 = drive to wall, button 2 = voltage steps (LIFTED)
 libraries/             Arduino libraries from the course (MECOtron, BasicLinearAlgebra, Adafruit, ...)
 
 course_material/       READ-ONLY copies of the course notebooks, images, datasheet and FAQ

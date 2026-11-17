@@ -19,7 +19,7 @@ bool Robot::init() {
 
   resetStateEstimator();
   resetController();
-  xref(0) = readValue(0);
+  xref(0) = readValue(0)*Meas2State;  // reference distance [m] typed in ValueOut0, converted to rad
 
   return true;
 }
@@ -47,7 +47,8 @@ void Robot::control() {
 
     // Send useful outputs to QRC. After correction: a posteriori estimate
     writeValue(9, _xhat(0));
-    writeValue(10, _nu(0));
+    writeValue(10, _nu(0));        // innovation [m]; 0 when the reading was rejected by the gate
+    writeValue(11, _Phat(0,0));    // a posteriori variance [rad^2]
   }
 
   
@@ -56,9 +57,9 @@ void Robot::control() {
   if(controlEnabled() && StateEstimationEnabled()) {   // only do this if controller is enabled (triggered by pushing 'Button 0' in QRoboticsCenter)
 
     // POSITION CONTROLLER
-    xref(0) = readValue(0);  // use channel 0 in QRoboticsCenter to provide the constant position reference
-    K(0) = -2.0;                        // state feedback gain K, [CHANGE THIS VALUE!!!]
-    desired_velocity = K * (_xhat - xref);       // calculate the state feedback signal, (i.e. the input for the velocity controller)
+    xref(0) = readValue(0)*Meas2State;  // use channel 0 to provide the constant position reference
+    K(0) = 2.0;                        // state feedback gain K [1/s]. Positive: too far -> xref - xhat > 0 -> drive forward
+    desired_velocity = K * (xref - _xhat);       // calculate the state feedback signal, (i.e. the input for the velocity controller)
 
     // VELOCITY CONTROLLER [DON'T CHANGE THIS PART!!!]
     float eA = desired_velocity(0)-spA;                 //  calculate the velocity error of motor A (in radians/s)
@@ -67,9 +68,6 @@ void Robot::control() {
     // the actual control algorithm
     uA = n0d0*eA + n1d0*errorA[0] + n2d0*errorA[1] - d2d0*controlA[1]; // equation (2), the difference equation
     uB = n0d0*eB + n1d0*errorB[0] + n2d0*errorB[1] - d2d0*controlB[1]; // equation (2), the difference equation
-
-    uA = constrain(uA, -20.0, 20.0);
-    uB = constrain(uB, -20.0, 20.0);
 
     // store the new errors and new control signals in a member variable
     for(int k=0; k<1; k++) {
@@ -122,12 +120,13 @@ void Robot::resetController(){
 void Robot::resetStateEstimator() {
   // Initialize state covariance matrix
   _Phat.Fill(0);      // Initialize the covariance matrix
-  _Phat(0,0) = 9.5;  // Change this according to your experiments
+  _Phat(0,0) = P0_STATE;  // (0.10 m / R_WHEEL)^2 = 10 cm initial uncertainty, see state_estimator.h
 
   // Initialize state estimate
   _xhat(0) = readValue(1)*Meas2State;   // initial distance [m] typed in ValueOut1 (ruler), converted to rad
 
   _nu(0) = 0.0;
+  ResetGate();        // forget gated readings from a previous run
 }
 
 bool Robot::controlEnabled() {

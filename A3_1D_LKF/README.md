@@ -27,24 +27,24 @@ The template's `robot.h` defines `Meas2State = -1/R_WHEEL`, so the state is the 
 
 The front sensor has drop-outs that read 24.78 m. `CorrectionUpdate` therefore has a **gate**:
 
-* readings above 1 m are always skipped (out of range);
-* innovations above 3 sigma (`nu^2 > 9 * S`) are skipped, **unless** 20 samples in a row (0.2 s) fail the test. Then the measurement is accepted again, because the estimate is wrong, not the sensor. Without this re-sync a wrong initial guess (e.g. ValueOut1 left at 0) locks the filter out forever. In the simulation the pure 3-sigma gate ends 465 mm off, while the re-sync version ends 5 mm off.
+* readings outside 0.04–0.35 m are always skipped (Sharp GP2Y0A41SK range ~0.04–0.30 m plus margin; also catches drop-outs, inf and NaN);
+* innovations above 3 sigma (`nu^2 > 9 * S`) are skipped, **unless** 20 samples in a row (0.2 s) fail the test. Then the measurement is accepted again and `_Phat` is reset to `P0_STATE`, so the filter actually catches up, because the estimate is wrong, not the sensor. The counter is cleared in `resetStateEstimator()`. Without this re-sync a wrong initial guess (e.g. ValueOut1 left at 0) locks the filter out forever. In the simulation the pure 3-sigma gate ends 465 mm off, while the re-sync version ends 5 mm off.
 
 Simulation results (simulated approach from 0.45 m to about 0.18 m, noise from the real recordings): about 6 mm RMSE for the filter, 22 mm for the sensor alone, 91 mm for the prediction alone. Without the gate a single drop-out moves the estimate by about 125 mm.
 
 ## Values to fill in `robot.cpp`
 
 ```cpp
-K(0) = -2.0;                           // starting guess; must be NEGATIVE (see below), tune it on the robot
-_Phat(0,0) = 9.5;                      // (0.10 m / R_WHEEL)^2 = 10 cm initial uncertainty
+K(0) = 2.0;                            // starting guess [1/s]; POSITIVE with the template law (see below), tune it on the robot
+_Phat(0,0) = P0_STATE;                 // 9.5 rad^2 = (0.10 m / R_WHEEL)^2 = 10 cm initial uncertainty (state_estimator.h)
 _xhat(0) = readValue(1)*Meas2State;    // initial distance in metres typed in ValueOut1
 ```
 
-* `desired_velocity = K * (xhat - xref)` and driving forward increases `x = -d/R`, so `K < 0`. Check the sign with the wheels lifted, then raise `|K|` until the robot is fast but does not oscillate.
-* The reference `ValueOut0` is in rad: `xref = -d_ref / R_WHEEL` (20 cm gives -6.15).
+* Template law, unchanged: `desired_velocity = K * (xref - xhat)`. Driving forward increases `x = -d/R`; too far from the wall means `xhat < xref`, so `K > 0` drives forward. Check the sign with the wheels lifted, then raise `K` until the robot is fast but does not oscillate.
+* Both inputs are in **metres**: `ValueOut0` = reference distance, `ValueOut1` = initial distance (ruler). The firmware converts them with `Meas2State`.
 * Do not change the velocity controller.
 
-Template log channels (`writeValue`): 0 uA, 1 uB, 2 posA, 3 posB, 4 spA, 5 spB, 6 xref, 7 front distance, 8 xhat (a priori), 9 xhat (a posteriori), 10 innovation.
+Template log channels (`writeValue`): 0 uA, 1 uB, 2 posA, 3 posB, 4 spA, 5 spB, 6 xref, 7 front distance, 8 xhat (a priori), 9 xhat (a posteriori), 10 innovation (0 when the reading was rejected), 11 P (a posteriori) [rad^2]. Channels 9–11 are only written while the estimator is on.
 
 ## Tests to run on the robot
 

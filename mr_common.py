@@ -40,11 +40,14 @@ DATA_A3 = REPO / 'data' / 'A3'
 COLUMN_MAPS = {
     # test_firmware/INTERNAL-Identification (our version, R1-R5 of Assignment 2)
     'identification': ['VA', 'VB', 'wA', 'wB', 'pA', 'pB', 'ax', 'ay', 'az', 'gx', 'gy', 'gz'],
+    # test_firmware/INTERNAL-Identification-A3 (A3 tests: S = static sensor, W = drive to wall, M = voltage steps, lifted)
+    'identification_a3': ['VA', 'VB', 'IA', 'IB', 'wA', 'wB', 'pA', 'pB', 'front', 'ax', 'ay', 'gz'],
     # course default of INTERNAL-Identification (assignments-main, before our changes)
     'identification_course': ['VA', 'VB', 'IA', 'IB', 'pA', 'pB', 'wA', 'wB', 'front', 'side', 'ax', 'gx'],
-    # A3_1D_LKF/INTERNAL-StateEstimation_StateFeedback (writeValue 0..10). xhat_post and nu are only
-    # written while the estimator is enabled (Button 1). x* are in rad (x = -d / R_WHEEL), front in m.
-    'state_feedback': ['uA', 'uB', 'pA', 'pB', 'wA', 'wB', 'xref', 'front', 'xhat_prior', 'xhat_post', 'nu'],
+    # A3_1D_LKF/INTERNAL-StateEstimation_StateFeedback (writeValue 0..11). xhat_post, nu and P_post are only
+    # written while the estimator is enabled (Button 1). x* in rad (x = -d / R_WHEEL), P in rad^2, front and nu in m;
+    # nu = 0 marks a reading rejected by the gate. Logs from before 2026-11-17 have no P_post (11 channels used).
+    'state_feedback': ['uA', 'uB', 'pA', 'pB', 'wA', 'wB', 'xref', 'front', 'xhat_prior', 'xhat_post', 'nu', 'P_post'],
 }
 # Units: V [V], I [A], w [rad/s of the wheel], p [rad of the wheel], a [m/s^2], g [rad/s], distances [m].
 
